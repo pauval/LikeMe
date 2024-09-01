@@ -15,6 +15,7 @@ function App() {
     const { data: posts } = await axios.get(urlBaseServer + "/posts");
     setPosts([...posts]);
   };
+  
 
   const agregarPost = async () => {
     const post = { titulo, url: imgSrc, descripcion };
@@ -27,12 +28,14 @@ function App() {
     await axios.put(urlBaseServer + `/posts/like/${id}`);
     getPosts();
   };
+  
 
   // este método se utilizará en el siguiente desafío
   const eliminarPost = async (id) => {
     await axios.delete(urlBaseServer + `/posts/${id}`);
     getPosts();
-  };
+  }; 
+
 
   useEffect(() => {
     getPosts();
