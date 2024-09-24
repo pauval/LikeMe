@@ -9,16 +9,29 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get('/posts', async (req, res) => {
+/* app.get('/posts', async (req, res) => {
     try {
         const result = await pool.query('SELECT * FROM posts');
         res.json(result.rows);
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
+}); */
+
+app.get('/posts', async (req, res) => {
+    try {
+        const result = await pool.query('SELECT * FROM posts ORDER BY id');
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'No se encontraron publicaciones' });
+        }
+        res.json(result.rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
 
-app.post('/posts', async (req, res) => {
+
+/* app.post('/posts', async (req, res) => {
     const { titulo, url, descripcion } = req.body;
     try {
         await pool.query(
@@ -29,7 +42,27 @@ app.post('/posts', async (req, res) => {
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
+}); */
+
+
+app.post('/posts', async (req, res) => {
+    const { titulo, url, descripcion } = req.body;
+
+    if (!titulo || !url || !descripcion) {
+        return res.status(400).json({ message: 'Campos no pueden ser vacios' });
+    }
+
+    try {
+        await pool.query(
+            'INSERT INTO posts (titulo, img, descripcion, likes) VALUES ($1, $2, $3, $4)',
+            [titulo, url, descripcion, 0] 
+        );
+        res.status(201).send('Post agregado exitosamente');
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
 });
+
 
 
 app.delete('/posts/:id', async (req, res) => {
