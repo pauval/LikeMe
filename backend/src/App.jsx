@@ -10,16 +10,18 @@ function App() {
   const [imgSrc, setImgSRC] = useState("");
   const [descripcion, setDescripcion] = useState("");
   const [posts, setPosts] = useState([]);
-  const [error, setError] = useState('');  // Nuevo estado para manejar errores
+  const [error, setError] = useState('');
+  const [isEditing, setIsEditing] = useState(false);  
+  const [currentPostId, setCurrentPostId] = useState(null);  
 
   const getPosts = async () => {
     try {
       const { data: posts } = await axios.get(urlBaseServer + "/posts");
       setPosts([...posts]);
-      setError('');  // Limpia el mensaje de error si la solicitud es exitosa
+      setError('');  
     } catch (error) {
       if (error.response) {
-        setError(error.response.data.message);  // Maneja el mensaje de error desde el backend
+        setError(error.response.data.message); 
       } else {
         setError('Error al cargar los posts');
       }
@@ -31,7 +33,6 @@ function App() {
     try {
         await axios.post(urlBaseServer + "/posts", post);
         getPosts();
-        // Limpiar los campos de entrada después de agregar el post
         setTitulo('');
         setImgSRC('');
         setDescripcion('');
@@ -40,25 +41,51 @@ function App() {
     }
   };
 
-  // este método se utilizará en el siguiente desafío
+
+  const editarPost = async (id) => {
+    const postActual = posts.find(post => post.id === id);
+    
+    const updatedPost = { 
+      titulo, 
+      url: imgSrc, 
+      descripcion, 
+      likes: postActual.likes
+    };
+    
+    try {
+      await axios.put(urlBaseServer + `/posts/${id}`, updatedPost);
+      getPosts();
+      setTitulo('');
+      setImgSRC('');
+      setDescripcion('');
+      setIsEditing(false); 
+    } catch (error) {
+      console.error('Error al editar el post', error);
+    }
+  };
+  
+
+  const cargarDatosParaEditar = (post) => {
+    setTitulo(post.titulo);
+    setImgSRC(post.img);
+    setDescripcion(post.descripcion);
+    setCurrentPostId(post.id);
+    setIsEditing(true);  
+  };
+
   const like = async (id) => {
     await axios.put(urlBaseServer + `/posts/like/${id}`);
     getPosts();
   };
 
-  // este método se utilizará en el siguiente desafío
   const eliminarPost = async (id) => {
     try {
       await axios.delete(urlBaseServer + `/posts/${id}`);
-      
-      // Actualizar el estado de posts eliminando el post con el id correspondiente
       setPosts(posts.filter(post => post.id !== id));
-
     } catch (error) {
       console.error('Error al eliminar el post', error);
     }
-};
-
+  };
 
   useEffect(() => {
     getPosts();
@@ -70,31 +97,28 @@ function App() {
       <div className="row m-auto px-5">
         <div className="col-12 col-sm-4">
           <Form
-            titulo={titulo}           // Pasar el estado de titulo
-            imgSrc={imgSrc}           // Pasar el estado de imgSrc
-            descripcion={descripcion}  // Pasar el estado de descripcion
+            titulo={titulo}
+            imgSrc={imgSrc}
+            descripcion={descripcion}
             setTitulo={setTitulo}
             setImgSRC={setImgSRC}
             setDescripcion={setDescripcion}
-            agregarPost={agregarPost}
+            agregarPost={isEditing ? () => editarPost(currentPostId) : agregarPost}
+            isEditing={isEditing} 
           />
         </div>
         <div className="col-12 col-sm-8 px-5 row posts align-items-start">
-          {/* Mostrar mensaje de error si existe */}
           {error && <p className="error-message">{error}</p>} 
-  
-          {/* Mostrar mensaje si no hay posts */}
           {posts.length === 0 && !error && (
             <p className="no-posts-message">No se encontraron publicaciones</p>
           )}
-  
-          {/* Mostrar los posts */}
           {posts.map((post, i) => (
             <Post
               key={i}
               post={post}
               like={like}
               eliminarPost={eliminarPost}
+              cargarDatosParaEditar={cargarDatosParaEditar} 
             />
           ))}
         </div>
